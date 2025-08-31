@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Sound Module</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js library for Web Audio API -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Barlow', sans-serif;
+            font-size: 14pt;
+            background-color: #f3f4f6;
+            padding: 2vh 2vw;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1, h2 {
+            font-family: 'Oswald', sans-serif;
+            font-size: clamp(16pt, 4vw, 24pt);
+            text-transform: uppercase;
+            color: #000;
+        }
+        p {
+            font-size: clamp(12pt, 3vw, 14pt);
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 1rem;
+        }
+        .section-card {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button-primary {
+            background-color: #E91D63;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-family: 'Barlow', sans-serif;
+            font-size: 14pt;
+            font-weight: 300;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .button-primary:hover {
+            background-color: #d11a5a;
+        }
+        #waveformCanvas {
+            border-radius: 0.5rem;
+            background-color: #1f2937;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Introduction Section -->
+        <div class="section-card">
+            <h1>The Fundamentals of Sound</h1>
+            <p>Sound is created by vibrations that travel through a medium as a wave. Two key properties of a sound wave determine what we hear: frequency and amplitude. Explore how they work in this interactive module!</p>
+        </div>
+
+        <!-- Interactive Sound Section -->
+        <div class="section-card flex flex-col items-center gap-6">
+            <div class="w-full flex justify-center">
+                <canvas id="waveformCanvas" width="500" height="200" class="w-full max-w-lg"></canvas>
+            </div>
+            
+            <div class="w-full flex flex-col md:flex-row items-center gap-4">
+                <!-- Frequency Control -->
+                <div class="w-full md:w-1/2 flex flex-col gap-2 p-4 bg-gray-100 rounded-lg">
+                    <label for="freqSlider" class="text-sm font-semibold text-gray-700">Frequency (Hz)</label>
+                    <input type="range" id="freqSlider" min="50" max="1000" value="440" step="1">
+                    <p class="text-xs text-gray-500">
+                        <span id="freqValue">440</span> Hz
+                        <br>
+                        (Pitch)
+                    </p>
+                </div>
+                
+                <!-- Amplitude Control -->
+                <div class="w-full md:w-1/2 flex flex-col gap-2 p-4 bg-gray-100 rounded-lg">
+                    <label for="ampSlider" class="text-sm font-semibold text-gray-700">Amplitude</label>
+                    <input type="range" id="ampSlider" min="0" max="1" value="0.5" step="0.01">
+                    <p class="text-xs text-gray-500">
+                        <span id="ampValue">0.5</span>
+                        <br>
+                        (Volume)
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Play/Stop Button -->
+            <button id="playButton" class="button-primary w-full max-w-xs mt-4">Play Sound</button>
+        </div>
+    </div>
+
+    <!-- Message box (since alert() is not allowed) -->
+    <div id="custom-alert" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+            <p id="alert-message" class="text-lg font-bold mb-4"></p>
+            <button onclick="document.getElementById('custom-alert').classList.add('hidden')" class="button-primary px-4 py-2">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Custom alert function to replace window.alert()
+        window.alert = function(message) {
+            const alertBox = document.getElementById('custom-alert');
+            const alertMessage = document.getElementById('alert-message');
+            alertMessage.textContent = message;
+            alertBox.classList.remove('hidden');
+        };
+
+        // DOM elements
+        const playButton = document.getElementById('playButton');
+        const freqSlider = document.getElementById('freqSlider');
+        const ampSlider = document.getElementById('ampSlider');
+        const freqValueSpan = document.getElementById('freqValue');
+        const ampValueSpan = document.getElementById('ampValue');
+        const canvas = document.getElementById('waveformCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // State variables
+        let isPlaying = false;
+        let oscillator = null;
+        let waveform = null;
+
+        // Initialize Web Audio components
+        // Tone.js needs a user gesture to start, which we'll handle with the button click.
+        
+        // Function to start the sound and visualization
+        async function startSound() {
+            // Start the Tone.js context if it's not already running
+            if (Tone.context.state !== 'running') {
+                await Tone.start();
+            }
+
+            // Create a new oscillator if one doesn't exist
+            if (!oscillator) {
+                oscillator = new Tone.Oscillator().toDestination();
+                waveform = new Tone.Waveform();
+                // Connect the oscillator to the waveform analyzer
+                oscillator.connect(waveform);
+            }
+
+            // Set the frequency and amplitude from the sliders
+            oscillator.frequency.value = freqSlider.value;
+            oscillator.volume.value = Tone.gainToDb(ampSlider.value);
+
+            // Start the oscillator
+            oscillator.start();
+            isPlaying = true;
+            playButton.textContent = 'Stop Sound';
+            drawWaveform();
+        }
+
+        // Function to stop the sound and visualization
+        function stopSound() {
+            if (oscillator) {
+                oscillator.stop();
+                isPlaying = false;
+                playButton.textContent = 'Play Sound';
+                // Clear the canvas when sound stops
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // Event listener for the play/stop button
+        playButton.addEventListener('click', () => {
+            if (isPlaying) {
+                stopSound();
+            } else {
+                startSound();
+            }
+        });
+
+        // Event listeners for sliders to update oscillator properties in real-time
+        freqSlider.addEventListener('input', () => {
+            const freq = freqSlider.value;
+            freqValueSpan.textContent = freq;
+            if (isPlaying) {
+                // Instantly update the frequency
+                oscillator.frequency.value = freq;
+            }
+        });
+
+        ampSlider.addEventListener('input', () => {
+            const amp = ampSlider.value;
+            ampValueSpan.textContent = amp;
+            if (isPlaying) {
+                // Convert linear gain (amplitude) to decibels for volume control
+                oscillator.volume.value = Tone.gainToDb(amp);
+            }
+        });
+
+        // Drawing loop to visualize the waveform on the canvas
+        function drawWaveform() {
+            if (!isPlaying) return;
+
+            requestAnimationFrame(drawWaveform);
+            
+            // Get the waveform data from the Tone.js analyzer
+            const waveformData = waveform.getValue();
+            
+            // Get the canvas dimensions and clear the canvas for redrawing
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Set drawing style
+            ctx.beginPath();
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+
+            // Draw the waveform
+            for (let i = 0; i < waveformData.length; i++) {
+                const x = i / waveformData.length * canvasWidth;
+                const y = (waveformData[i] + 1) / 2 * canvasHeight;
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // Initial update of the values on page load
+        freqValueSpan.textContent = freqSlider.value;
+        ampValueSpan.textContent = ampSlider.value;
+    </script>
+</body>
+</html>
