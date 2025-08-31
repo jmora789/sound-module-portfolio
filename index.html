@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400&family=Oswald:wght@500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tone.js library for Web Audio API -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         body {
@@ -63,26 +62,27 @@
             border-radius: 0.5rem;
             background-color: #1f2937;
             box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+            /* New CSS for responsiveness */
+            width: 100%;
+            height: auto;
+            min-height: 150px; /* Ensures it has a visible height */
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- Introduction Section -->
         <div class="section-card">
             <h1>The Fundamentals of Sound</h1>
             <p>Sound is created by vibrations that travel through a medium as a wave. Two key properties of a sound wave determine what we hear: frequency and amplitude. Explore how they work in this interactive module!</p>
         </div>
 
-        <!-- Interactive Sound Section -->
         <div class="section-card flex flex-col items-center gap-6">
             <div class="w-full flex justify-center">
-                <canvas id="waveformCanvas" width="500" height="200" class="w-full max-w-lg"></canvas>
+                <canvas id="waveformCanvas" class="w-full max-w-lg"></canvas>
             </div>
             
             <div class="w-full flex flex-col md:flex-row items-center gap-4">
-                <!-- Frequency Control -->
                 <div class="w-full md:w-1/2 flex flex-col gap-2 p-4 bg-gray-100 rounded-lg">
                     <label for="freqSlider" class="text-sm font-semibold text-gray-700">Frequency (Hz)</label>
                     <input type="range" id="freqSlider" min="50" max="1000" value="440" step="1">
@@ -93,7 +93,6 @@
                     </p>
                 </div>
                 
-                <!-- Amplitude Control -->
                 <div class="w-full md:w-1/2 flex flex-col gap-2 p-4 bg-gray-100 rounded-lg">
                     <label for="ampSlider" class="text-sm font-semibold text-gray-700">Amplitude</label>
                     <input type="range" id="ampSlider" min="0" max="1" value="0.5" step="0.01">
@@ -105,12 +104,10 @@
                 </div>
             </div>
             
-            <!-- Play/Stop Button -->
             <button id="playButton" class="button-primary w-full max-w-xs mt-4">Play Sound</button>
         </div>
     </div>
 
-    <!-- Message box (since alert() is not allowed) -->
     <div id="custom-alert" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white p-6 rounded-lg shadow-xl text-center">
             <p id="alert-message" class="text-lg font-bold mb-4"></p>
@@ -140,6 +137,18 @@
         let isPlaying = false;
         let oscillator = null;
         let waveform = null;
+
+        // Function to update canvas size based on its CSS dimensions
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        // Event listener for window resize
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initial resize
+        resizeCanvas();
 
         // Initialize Web Audio components
         // Tone.js needs a user gesture to start, which we'll handle with the button click.
