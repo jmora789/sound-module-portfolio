@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Sound Canvas</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Barlow+Light:wght@300&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Barlow:wght@300&display=swap" rel="stylesheet">
     <!-- Tone.js for the interactive sound elements -->
     <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.js"></script>
     <style>
         body {
             background-color: #1a202c;
             color: #e2e8f0;
-            font-family: 'Barlow Light', sans-serif;
+            font-family: 'Barlow', sans-serif;
         }
         h1, h2 {
             font-family: 'Oswald', sans-serif;
@@ -26,9 +26,18 @@
             <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">Sound and Silence</h1>
             <p class="text-gray-400">A John Cage-inspired sound exploration.</p>
         </header>
+        
+        <!-- Audio Context Initialization Section -->
+        <section id="audioContextSection" class="mb-8 p-6 bg-gray-700 rounded-xl text-center">
+            <h2 class="text-lg font-semibold uppercase mb-4 text-white">Start Audio</h2>
+            <p class="text-gray-300 mb-4">Click the button below to enable sound. This is required for sound to work in your browser.</p>
+            <button id="startButton" class="w-full sm:w-auto px-8 py-4 bg-lime-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
+                Start Audio
+            </button>
+        </section>
 
         <!-- Recording Section -->
-        <section class="mb-8 p-6 bg-gray-700 rounded-xl">
+        <section id="recordingSection" class="mb-8 p-6 bg-gray-700 rounded-xl hidden">
             <h2 class="text-lg font-semibold uppercase mb-4 text-white text-center">Record Your Moment</h2>
             <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
                 <button id="recordButton" class="w-full sm:w-auto px-6 py-3 bg-[#e91d63] text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
@@ -47,7 +56,7 @@
         </section>
 
         <!-- Sound Interaction Section -->
-        <section class="p-6 bg-gray-700 rounded-xl">
+        <section id="soundSection" class="p-6 bg-gray-700 rounded-xl hidden">
             <h2 class="text-lg font-semibold uppercase mb-4 text-white text-center">Interactive Sounds</h2>
             <p class="text-gray-300 mb-6">Click the buttons below to generate a new sound, or just listen to the silence.</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -88,16 +97,27 @@
         });
 
         document.getElementById('button3').addEventListener('click', () => {
-            // First, start the main Tone.js transport if it's not running
             if (Tone.Transport.state !== 'started') {
                 Tone.Transport.start();
             }
-            // Then, toggle the drone loop on or off
             if (drone.state === 'started') {
                 drone.stop();
             } else {
                 drone.start();
             }
+        });
+        
+        // --- Audio Context Initialization ---
+        const startButton = document.getElementById('startButton');
+        const audioContextSection = document.getElementById('audioContextSection');
+        const recordingSection = document.getElementById('recordingSection');
+        const soundSection = document.getElementById('soundSection');
+
+        startButton.addEventListener('click', () => {
+            Tone.start();
+            audioContextSection.classList.add('hidden');
+            recordingSection.classList.remove('hidden');
+            soundSection.classList.remove('hidden');
         });
 
         // --- Audio Recording Logic ---
@@ -111,7 +131,6 @@
         const downloadLink = document.getElementById('downloadLink');
         const downloadContainer = document.getElementById('downloadContainer');
 
-        // Check for MediaRecorder support
         if (!navigator.mediaDevices || !window.MediaRecorder) {
             messageArea.textContent = "Your browser does not support audio recording.";
             recordButton.disabled = true;
@@ -120,30 +139,24 @@
         recordButton.addEventListener('click', async () => {
             try {
                 messageArea.textContent = "Requesting microphone permission...";
-                // Request microphone access
                 audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 messageArea.textContent = "Recording...";
                 recordButton.classList.add('hidden');
                 stopButton.classList.remove('hidden');
                 downloadContainer.classList.add('hidden');
-                console.log("Microphone access granted. Starting MediaRecorder.");
 
-                // Initialize MediaRecorder
                 mediaRecorder = new MediaRecorder(audioStream, { mimeType: 'audio/webm' });
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = event => {
-                    console.log("Data available:", event.data);
                     if (event.data.size > 0) {
                         audioChunks.push(event.data);
                     }
                 };
 
                 mediaRecorder.onstop = () => {
-                    console.log("MediaRecorder stopped.");
                     if (audioChunks.length === 0) {
                         messageArea.textContent = "Recording failed. No audio data was captured.";
-                        console.error("No audio data was captured.");
                         return;
                     }
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -152,17 +165,13 @@
                     downloadLink.href = audioUrl;
                     downloadContainer.classList.remove('hidden');
                     messageArea.textContent = "Recording complete! Click to download.";
-                    console.log("Recording successfully processed.");
 
-                    // Stop the stream tracks to release the microphone
                     audioStream.getTracks().forEach(track => {
-                        console.log("Stopping audio track:", track);
                         track.stop();
                     });
                 };
                 
                 mediaRecorder.start();
-                console.log("MediaRecorder started.");
 
             } catch (err) {
                 console.error("Error accessing microphone:", err);
@@ -174,7 +183,6 @@
 
         stopButton.addEventListener('click', () => {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
-                console.log("Stopping MediaRecorder.");
                 mediaRecorder.stop();
                 messageArea.textContent = "Processing recording...";
                 stopButton.classList.add('hidden');
