@@ -3,251 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fundamentals of Sound</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <title>Interactive Sound Canvas</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Barlow+Light:wght@300&display=swap" rel="stylesheet">
+    <!-- Tone.js for the interactive sound elements -->
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.js"></script>
     <style>
         body {
-            font-family: 'Barlow', sans-serif;
-            font-size: 14pt;
-            background-color: #f3f4f6;
-            padding: 2vh 2vw;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #333;
+            background-color: #1a202c;
+            color: #e2e8f0;
+            font-family: 'Barlow Light', sans-serif;
         }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            padding: 1rem;
-        }
-        .section-card {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .button-primary {
-            background-color: #e91d63;
-            color: #fff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-family: 'Barlow', sans-serif;
-            font-size: 14pt;
-            font-weight: 300;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-align: center;
-        }
-        .button-primary:hover {
-            background-color: #d11a5a;
-        }
-        #waveformCanvas {
-            border-radius: 0.5rem;
-            background-color: #1f2937;
-            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            height: auto;
-            min-height: 150px;
+        h1, h2 {
+            font-family: 'Oswald', sans-serif;
         }
     </style>
 </head>
-<body>
+<body class="flex items-center justify-center min-h-screen p-4 md:p-8">
 
-    <div class="container">
-        <div class="section-card flex justify-between items-center gap-4">
-            <h1 class="text-3xl md:text-4xl font-bold font-['Oswald'] text-[#e91d63]">The Fundamentals of Sound</h1>
-            <a href="https://www.jennifermora.com/portfolio" target="_blank" class="button-primary px-4 py-2 text-sm md:text-base">Return to Portfolio</a>
-        </div>
-        <div class="section-card">
-            <p>Sound is created by vibrations that travel through a medium as a wave. Two key properties of a sound wave determine what we hear: frequency and amplitude. Explore how they work in this interactive module!</p>
-        </div>
-        
-        <div class="section-card flex flex-col items-center gap-6">
-            <div class="w-full flex justify-center">
-                <canvas id="waveformCanvas" class="w-full max-w-lg"></canvas>
-            </div>
-            
-            <div class="w-full flex flex-col md:flex-row items-center gap-4">
-                <div class="w-full md:w-1/2 flex flex-col gap-2 p-4 bg-gray-100 rounded-lg">
-                    <label for="freqSlider" class="text-sm font-semibold text-gray-700">Frequency (Hz)</label>
-                    <input type="range" id="freqSlider" min="50" max="1000" value="440" step="1">
-                    <p class="text-xs text-gray-500">
-                        <span id="freqValue">440</span> Hz
-                        <br>
-                        (Pitch)
-                    </p>
-                </div>
-                
-                <div class="w-full md:w-1/2 flex flex-col gap-2 p-4 bg-gray-100 rounded-lg">
-                    <label for="ampSlider" class="text-sm font-semibold text-gray-700">Amplitude</label>
-                    <input type="range" id="ampSlider" min="0" max="1" value="0.5" step="0.01">
-                    <p class="text-xs text-gray-500">
-                        <span id="ampValue">0.5</span>
-                        <br>
-                        (Volume)
-                    </p>
-                </div>
-            </div>
-            
-            <button id="playButton" class="button-primary w-full max-w-xs mt-4">Play Sound</button>
-        </div>
-    </div>
+    <div class="w-full max-w-2xl bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">Sound and Silence</h1>
+            <p class="text-gray-400">A John Cage-inspired sound exploration.</p>
+        </header>
 
-    <div id="custom-alert" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
-            <p id="alert-message" class="text-lg font-bold mb-4"></p>
-            <button onclick="document.getElementById('custom-alert').classList.add('hidden')" class="button-primary px-4 py-2">OK</button>
-        </div>
+        <!-- Recording Section -->
+        <section class="mb-8 p-6 bg-gray-700 rounded-xl">
+            <h2 class="text-lg font-semibold uppercase mb-4 text-white text-center">Record Your Moment</h2>
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="recordButton" class="w-full sm:w-auto px-6 py-3 bg-[#e91d63] text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                    Record
+                </button>
+                <button id="stopButton" class="hidden w-full sm:w-auto px-6 py-3 bg-rose-600 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                    Stop
+                </button>
+            </div>
+            <p id="messageArea" class="mt-4 text-center text-gray-300 min-h-[1.5rem]"></p>
+            <div id="downloadContainer" class="mt-4 hidden flex justify-center">
+                <a id="downloadLink" href="#" download="my_audio.webm" class="px-6 py-3 bg-sky-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                    Download Recording
+                </a>
+            </div>
+        </section>
+
+        <!-- Sound Interaction Section -->
+        <section class="p-6 bg-gray-700 rounded-xl">
+            <h2 class="text-lg font-semibold uppercase mb-4 text-white text-center">Interactive Sounds</h2>
+            <p class="text-gray-300 mb-6">Click the buttons below to generate a new sound, or just listen to the silence.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button id="button1" class="w-full py-3 bg-fuchsia-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                    Generate<br>Random Note
+                </button>
+                <button id="button2" class="w-full py-3 bg-cyan-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                    Play<br>White Noise
+                </button>
+                <button id="button3" class="w-full py-3 bg-amber-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                    Toggle Drone
+                </button>
+            </div>
+        </section>
     </div>
 
     <script>
-        // Custom alert function to replace window.alert()
-        window.alert = function(message) {
-            const alertBox = document.getElementById('custom-alert');
-            const alertMessage = document.getElementById('alert-message');
-            alertMessage.textContent = message;
-            alertBox.classList.remove('hidden');
-        };
+        // --- Tone.js Sound Logic ---
+        const synth = new Tone.Synth().toDestination();
+        const noise = new Tone.Noise('pink').toDestination();
+        const droneSynth = new Tone.DuoSynth().toDestination();
+        const drone = new Tone.Loop(time => {
+            droneSynth.triggerAttackRelease("C3", "8n", time);
+        }, "1n");
 
-        // DOM elements
-        const playButton = document.getElementById('playButton');
-        const freqSlider = document.getElementById('freqSlider');
-        const ampSlider = document.getElementById('ampSlider');
-        const freqValueSpan = document.getElementById('freqValue');
-        const ampValueSpan = document.getElementById('ampValue');
-        const canvas = document.getElementById('waveformCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // State variables
-        let isPlaying = false;
-        let oscillator = null;
-        let waveform = null;
+        document.getElementById('button1').addEventListener('click', () => {
+            const notes = ["C4", "E4", "G4", "A4", "B4"];
+            const note = notes[Math.floor(Math.random() * notes.length)];
+            synth.triggerAttackRelease(note, "8n");
+        });
 
-        // Function to update canvas size based on its CSS dimensions
-        function resizeCanvas() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-        }
-
-        // Event listener for window resize
-        window.addEventListener('resize', resizeCanvas);
-        
-        // Initial resize
-        resizeCanvas();
-
-        // Initialize Web Audio components
-        // Tone.js needs a user gesture to start, which we'll handle with the button click.
-        
-        // Function to start the sound and visualization
-        async function startSound() {
-            // Start the Tone.js context if it's not already running
-            if (Tone.context.state !== 'running') {
-                await Tone.start();
-            }
-
-            // Create a new oscillator if one doesn't exist
-            if (!oscillator) {
-                oscillator = new Tone.Oscillator().toDestination();
-                waveform = new Tone.Waveform();
-                // Connect the oscillator to the waveform analyzer
-                oscillator.connect(waveform);
-            }
-
-            // Set the frequency and amplitude from the sliders
-            oscillator.frequency.value = freqSlider.value;
-            oscillator.volume.value = Tone.gainToDb(ampSlider.value);
-
-            // Start the oscillator
-            oscillator.start();
-            isPlaying = true;
-            playButton.textContent = 'Stop Sound';
-            drawWaveform();
-        }
-
-        // Function to stop the sound and visualization
-        function stopSound() {
-            if (oscillator) {
-                oscillator.stop();
-                isPlaying = false;
-                playButton.textContent = 'Play Sound';
-                // Clear the canvas when sound stops
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        }
-
-        // Event listener for the play/stop button
-        playButton.addEventListener('click', () => {
-            if (isPlaying) {
-                stopSound();
+        document.getElementById('button2').addEventListener('click', () => {
+            if (noise.state === 'started') {
+                noise.stop();
             } else {
-                startSound();
+                noise.start();
             }
         });
 
-        // Event listeners for sliders to update oscillator properties in real-time
-        freqSlider.addEventListener('input', () => {
-            const freq = freqSlider.value;
-            freqValueSpan.textContent = freq;
-            if (isPlaying) {
-                // Instantly update the frequency
-                oscillator.frequency.value = freq;
+        document.getElementById('button3').addEventListener('click', () => {
+            if (drone.state === 'started') {
+                drone.stop();
+            } else {
+                drone.start();
             }
         });
 
-        ampSlider.addEventListener('input', () => {
-            const amp = ampSlider.value;
-            ampValueSpan.textContent = amp;
-            if (isPlaying) {
-                // Convert linear gain (amplitude) to decibels for volume control
-                oscillator.volume.value = Tone.gainToDb(amp);
-            }
-        });
+        // --- Audio Recording Logic ---
+        let mediaRecorder;
+        let audioChunks = [];
 
-        // Drawing loop to visualize the waveform on the canvas
-        function drawWaveform() {
-            if (!isPlaying) return;
+        const recordButton = document.getElementById('recordButton');
+        const stopButton = document.getElementById('stopButton');
+        const messageArea = document.getElementById('messageArea');
+        const downloadLink = document.getElementById('downloadLink');
+        const downloadContainer = document.getElementById('downloadContainer');
 
-            requestAnimationFrame(drawWaveform);
-            
-            // Get the waveform data from the Tone.js analyzer
-            const waveformData = waveform.getValue();
-            
-            // Get the canvas dimensions and clear the canvas for redrawing
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            
-            // Set drawing style
-            ctx.beginPath();
-            ctx.strokeStyle = '#10b981';
-            ctx.lineWidth = 2;
-
-            // Draw the waveform
-            for (let i = 0; i < waveformData.length; i++) {
-                const x = i / waveformData.length * canvasWidth;
-                const y = (waveformData[i] + 1) / 2 * canvasHeight;
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.stroke();
+        // Check for MediaRecorder support
+        if (!navigator.mediaDevices || !window.MediaRecorder) {
+            messageArea.textContent = "Your browser does not support audio recording.";
+            recordButton.disabled = true;
         }
 
-        // Initial update of the values on page load
-        freqValueSpan.textContent = freqSlider.value;
-        ampValueSpan.textContent = ampSlider.value;
+        recordButton.addEventListener('click', async () => {
+            try {
+                // Request microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                messageArea.textContent = "Recording...";
+                recordButton.classList.add('hidden');
+                stopButton.classList.remove('hidden');
+                downloadContainer.classList.add('hidden');
+
+                // Initialize MediaRecorder
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    downloadLink.href = audioUrl;
+                    downloadContainer.classList.remove('hidden');
+                    messageArea.textContent = "Recording complete! Click to download.";
+
+                    // Stop the stream tracks to release the microphone
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                messageArea.textContent = "Error: Could not access microphone. Please check your browser permissions.";
+                recordButton.classList.remove('hidden');
+                stopButton.classList.add('hidden');
+            }
+        });
+
+        stopButton.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                messageArea.textContent = "Processing recording...";
+                stopButton.classList.add('hidden');
+                recordButton.classList.remove('hidden');
+            }
+        });
+
     </script>
 </body>
 </html>
