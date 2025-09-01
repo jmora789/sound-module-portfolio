@@ -31,16 +31,16 @@
         <section class="mb-8 p-6 bg-gray-700 rounded-xl">
             <h2 class="text-lg font-semibold uppercase mb-4 text-white text-center">Record Your Moment</h2>
             <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <button id="recordButton" class="w-full sm:w-auto px-6 py-3 bg-[#e91d63] text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                <button id="recordButton" class="w-full sm:w-auto px-6 py-3 bg-[#e91d63] text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
                     Record
                 </button>
-                <button id="stopButton" class="hidden w-full sm:w-auto px-6 py-3 bg-rose-600 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                <button id="stopButton" class="hidden w-full sm:w-auto px-6 py-3 bg-rose-600 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
                     Stop
                 </button>
             </div>
             <p id="messageArea" class="mt-4 text-center text-gray-300 min-h-[1.5rem]"></p>
             <div id="downloadContainer" class="mt-4 hidden flex justify-center">
-                <a id="downloadLink" href="#" download="my_audio.webm" class="px-6 py-3 bg-sky-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                <a id="downloadLink" href="#" download="my_audio.webm" class="px-6 py-3 bg-sky-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
                     Download Recording
                 </a>
             </div>
@@ -51,13 +51,13 @@
             <h2 class="text-lg font-semibold uppercase mb-4 text-white text-center">Interactive Sounds</h2>
             <p class="text-gray-300 mb-6">Click the buttons below to generate a new sound, or just listen to the silence.</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <button id="button1" class="w-full py-3 bg-fuchsia-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                <button id="button1" class="w-full py-3 bg-fuchsia-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
                     Generate<br>Random Note
                 </button>
-                <button id="button2" class="w-full py-3 bg-cyan-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                <button id="button2" class="w-full py-3 bg-cyan-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
                     Play<br>White Noise
                 </button>
-                <button id="button3" class="w-full py-3 bg-amber-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase barlow-text">
+                <button id="button3" class="w-full py-3 bg-amber-500 text-white font-light rounded-xl shadow-lg transition-transform transform hover:scale-105 uppercase">
                     Toggle Drone
                 </button>
             </div>
@@ -88,6 +88,11 @@
         });
 
         document.getElementById('button3').addEventListener('click', () => {
+            // First, start the main Tone.js transport if it's not running
+            if (Tone.Transport.state !== 'started') {
+                Tone.Transport.start();
+            }
+            // Then, toggle the drone loop on or off
             if (drone.state === 'started') {
                 drone.stop();
             } else {
@@ -98,6 +103,7 @@
         // --- Audio Recording Logic ---
         let mediaRecorder;
         let audioChunks = [];
+        let audioStream;
 
         const recordButton = document.getElementById('recordButton');
         const stopButton = document.getElementById('stopButton');
@@ -113,34 +119,50 @@
 
         recordButton.addEventListener('click', async () => {
             try {
+                messageArea.textContent = "Requesting microphone permission...";
                 // Request microphone access
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 messageArea.textContent = "Recording...";
                 recordButton.classList.add('hidden');
                 stopButton.classList.remove('hidden');
                 downloadContainer.classList.add('hidden');
+                console.log("Microphone access granted. Starting MediaRecorder.");
 
                 // Initialize MediaRecorder
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                mediaRecorder = new MediaRecorder(audioStream, { mimeType: 'audio/webm' });
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
+                    console.log("Data available:", event.data);
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
                 };
 
                 mediaRecorder.onstop = () => {
+                    console.log("MediaRecorder stopped.");
+                    if (audioChunks.length === 0) {
+                        messageArea.textContent = "Recording failed. No audio data was captured.";
+                        console.error("No audio data was captured.");
+                        return;
+                    }
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     
                     downloadLink.href = audioUrl;
                     downloadContainer.classList.remove('hidden');
                     messageArea.textContent = "Recording complete! Click to download.";
+                    console.log("Recording successfully processed.");
 
                     // Stop the stream tracks to release the microphone
-                    stream.getTracks().forEach(track => track.stop());
+                    audioStream.getTracks().forEach(track => {
+                        console.log("Stopping audio track:", track);
+                        track.stop();
+                    });
                 };
                 
                 mediaRecorder.start();
+                console.log("MediaRecorder started.");
 
             } catch (err) {
                 console.error("Error accessing microphone:", err);
@@ -152,6 +174,7 @@
 
         stopButton.addEventListener('click', () => {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
+                console.log("Stopping MediaRecorder.");
                 mediaRecorder.stop();
                 messageArea.textContent = "Processing recording...";
                 stopButton.classList.add('hidden');
